@@ -44,13 +44,11 @@
             return canvas;
         }
 
-        function addRectangleToImage(img, qrCodeSize) {
+        function addRectangleToImage(img, imageSize, padding = 10) {
             var canvas = document.createElement('canvas');
             var context = canvas.getContext('2d');
 
             // Calculate the size of the image as 25% of the QR code size
-            var imageSize = qrCodeSize * 0.28; // 25% of the QR code size
-            var padding = 10; // Adjust the padding as needed
             var rectSize = imageSize + padding * 2;
 
             // Set canvas size to accommodate the rectangle
@@ -88,12 +86,12 @@
                     var img = new Image();
                     img.onload = function () {
                         // Create circular image with white background
-                        var circleCanvas = addRectangleToImage(recolorImageToBlack(img), qrCodeSize);
+                        var circleCanvas = addRectangleToImage(recolorImageToBlack(img), (qrCodeSize + 60) * 0.28);
                         var canvas = document.getElementById('qrCanvas');
                         var context = canvas.getContext('2d');
-                        canvas.width = qrCode._oDrawing._elCanvas.width;
-                        canvas.height = qrCode._oDrawing._elCanvas.height;
-                        context.drawImage(qrCode._oDrawing._elCanvas, 0, 0);
+                        canvas.width = qrCode._oDrawing._elCanvas.width + 60;
+                        canvas.height = qrCode._oDrawing._elCanvas.height + 60;
+                        context.drawImage(addRectangleToImage(qrCode._oDrawing._elCanvas, 256, 25), 0, 0);
 
                         // Calculate where to place the image on the QR code
                         var imageX = (canvas.width - circleCanvas.width) / 2;
