@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>QR Code with Center Image</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+    <h2>QR Code Generator with Center Image</h2>
+    <input type="text" id="text" placeholder="Enter text for QR code">
+    <input type="file" id="image" accept="image/*">
+    <button onclick="generateQR()">Generate QR Code</button>
+    <div id="qrcode"></div>
+    <canvas id="qrCanvas" style="display: none;"></canvas>
+    <a id="downloadLink" style="display: none;">Download QR Code</a>
+
+    <script>
+        function recolorImageToBlack(img) {
+            var canvas = document.createElement('canvas');
+            var context = canvas.getContext('2d');
+            canvas.width = img.width;
+            canvas.height = img.height;
+
+            // Draw the original image onto the canvas
+            context.drawImage(img, 0, 0);
+
+            // Get the image data
+            var imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+            var data = imageData.data;
+
+            // Loop over each pixel to change non-white and non-transparent ones to black
+            for (var i = 0; i < data.length; i += 4) {
+                if (data[i + 3] !== 0 && (data[i] !== 255 || data[i + 1] !== 255 || data[i + 2] !== 255)) {
+                    // Change color to black
+                    data[i] = 0; // Red
+                    data[i + 1] = 0; // Green
+                    data[i + 2] = 0; // Blue
+                }
+            }
+
+            // Put the image data back on the canvas
+            context.putImageData(imageData, 0, 0);
+
+            return canvas;
+        }
+
+        function addRectangleToImage(img, qrCodeSize) {
+            var canvas = document.createElement('canvas');
+            var context = canvas.getContext('2d');
+
+            // Calculate the size of the image as 25% of the QR code size
+            var imageSize = qrCodeSize * 0.28; // 25% of the QR code size
+            var padding = 10; // Adjust the padding as needed
+            var rectSize = imageSize + padding * 2;
+
+            // Set canvas size to accommodate the rectangle
+            canvas.width = rectSize;
+            canvas.height = rectSize;
+
+            // Draw white rectangle
+            context.fillStyle = '#FFFFFF';
+            context.fillRect((canvas.width - rectSize) / 2, (canvas.height - rectSize) / 2, rectSize, rectSize);
+
+            // Resize and draw the image over the rectangle, centered
+            var imageX = (canvas.width - imageSize) / 2;
+            var imageY = (canvas.height - imageSize) / 2;
+            context.drawImage(img, imageX, imageY, imageSize, imageSize);
+
+            return canvas;
+        }
+
+        function generateQR() {
+            var text = document.getElementById('text').value;
+            var qrCodeSize = 256; // or any other size set by user
+            var qrCode = new QRCode(document.getElementById('qrcode'), {
+                text: text,
+                width: qrCodeSize,
+                height: qrCodeSize,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+
+            var imageInput = document.getElementById('image');
+            if (imageInput.files && imageInput.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    var img = new Image();
+                    img.onload = function () {
+                        // Create circular image with white background
+                        var circleCanvas = addRectangleToImage(recolorImageToBlack(img), qrCodeSize);
+                        var canvas = document.getElementById('qrCanvas');
+                        var context = canvas.getContext('2d');
+                        canvas.width = qrCode._oDrawing._elCanvas.width;
+                        canvas.height = qrCode._oDrawing._elCanvas.height;
+                        context.drawImage(qrCode._oDrawing._elCanvas, 0, 0);
+
+                        // Calculate where to place the image on the QR code
+                        var imageX = (canvas.width - circleCanvas.width) / 2;
+                        var imageY = (canvas.height - circleCanvas.height) / 2;
+
+                        // Draw the image with white circle onto the QR code
+                        context.drawImage(circleCanvas, imageX, imageY);
+
+                        // Update the QR code container
+                        document.getElementById('qrcode').innerHTML = '';
+                        document.getElementById('qrcode').appendChild(canvas);
+
+                        // Set download link
+                        var downloadLink = document.getElementById('downloadLink');
+                        downloadLink.href = canvas.toDataURL('image/png');
+                        downloadLink.download = 'QRCode.png';
+                        downloadLink.style.display = 'block';
+                        downloadLink.textContent = 'Download QR Code';
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(imageInput.files[0]);
+            }
+        }
+    </script>
+</body>
+</html>
